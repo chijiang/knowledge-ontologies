@@ -9,6 +9,7 @@ interface CanvasProps {
     mode: Mode;
     selectedElement: SelectedElement | null;
     connectSourceId: string | null;
+    isDragging: boolean;
     handleMouseDownNode: (e: React.MouseEvent, nodeId: string) => void;
     handleMouseMoveCanvas: (e: React.MouseEvent) => void;
     handleMouseUpCanvas: () => void;
@@ -23,6 +24,7 @@ export default function Canvas({
     mode,
     selectedElement,
     connectSourceId,
+    isDragging,
     handleMouseDownNode,
     handleMouseMoveCanvas,
     handleMouseUpCanvas,
@@ -31,7 +33,8 @@ export default function Canvas({
     svgRef
 }: CanvasProps) {
     return (
-        <div className="flex-1 relative bg-slate-50 overflow-hidden cursor-crosshair">
+        <div className={`flex-1 relative bg-slate-50 overflow-hidden ${mode === 'select' ? 'cursor-move' : 'cursor-crosshair'}`}
+             style={{ touchAction: 'none' }}>
             {/* 网格背景 */}
             <div className="absolute inset-0 opacity-10 pointer-events-none"
                 style={{
@@ -50,6 +53,7 @@ export default function Canvas({
             <svg
                 ref={svgRef}
                 className="w-full h-full"
+                style={{ touchAction: 'none' }}
                 onMouseMove={handleMouseMoveCanvas}
                 onMouseUp={handleMouseUpCanvas}
                 onClick={handleCanvasClick}
@@ -144,8 +148,11 @@ export default function Canvas({
                             data-node-id={node.id}
                             transform={`translate(${node.x},${node.y})`}
                             onMouseDown={(e) => handleMouseDownNode(e, node.id)}
-                            className={`${mode === 'select' ? 'cursor-move' : 'cursor-crosshair'} transition-transform duration-75`}
-                            style={{ opacity: (mode === 'connect' && connectSourceId && !isConnecting) ? 0.7 : 1 }}
+                            className={`${mode === 'select' ? 'cursor-move' : 'cursor-crosshair'} ${isDragging && selectedElement?.type === 'node' && selectedElement.id === node.id ? '' : 'transition-transform duration-75'}`}
+                            style={{
+                                opacity: (mode === 'connect' && connectSourceId && !isConnecting) ? 0.7 : 1,
+                                willChange: (isDragging && selectedElement?.type === 'node' && selectedElement.id === node.id) ? 'transform' : 'auto'
+                            }}
                         >
                             {/* 节点阴影 */}
                             <circle r="30" fill="black" fillOpacity="0.1" cy="2" />

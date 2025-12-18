@@ -163,6 +163,8 @@ export default function App() {
 
   const handleMouseMoveCanvas = (e: React.MouseEvent) => {
     if (isDragging && dragItemRef.current && mode === 'select') {
+      e.preventDefault();
+
       // 使用缓存的CTM计算位置 (避免 Layout Thrashing)
       const pos = getMousePos(e, ctmRef.current);
       const newX = pos.x - dragOffsetRef.current.x;
@@ -177,13 +179,18 @@ export default function App() {
       if (!rafIdRef.current) {
         rafIdRef.current = requestAnimationFrame(() => {
           const latestPos = mousePosRef.current;
-          if (latestPos) {
-            setNodes(prevNodes => prevNodes.map(n => {
-              if (n.id === dragItemRef.current) {
-                return { ...n, x: latestPos.x, y: latestPos.y };
-              }
-              return n;
-            }));
+          const draggedNodeId = dragItemRef.current;
+          if (latestPos && draggedNodeId) {
+            setNodes(prevNodes => {
+              // 找到被拖拽的节点索引，避免每次都遍历整个数组
+              const nodeIndex = prevNodes.findIndex(n => n.id === draggedNodeId);
+              if (nodeIndex === -1) return prevNodes;
+
+              // 创建新数组，只更新被拖拽的节点
+              const newNodes = [...prevNodes];
+              newNodes[nodeIndex] = { ...newNodes[nodeIndex], x: latestPos.x, y: latestPos.y };
+              return newNodes;
+            });
           }
           rafIdRef.current = null;
         });
@@ -278,6 +285,7 @@ export default function App() {
           mode={mode}
           selectedElement={selectedElement}
           connectSourceId={connectSourceId}
+          isDragging={isDragging}
           handleMouseDownNode={handleMouseDownNode}
           handleMouseMoveCanvas={handleMouseMoveCanvas}
           handleMouseUpCanvas={handleMouseUpCanvas}
